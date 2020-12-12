@@ -32,7 +32,7 @@
         </el-popover>
         <el-input v-model="dataForm.parentName" v-popover:menuListPopover :readonly="true" placeholder="点击选择上级菜单" class="menu-list__input" />
       </el-form-item>
-      <el-form-item v-if="dataForm.type === 1" label="菜单路由" prop="url">
+      <el-form-item v-if="dataForm.type === 1 || dataForm.type === 0" label="菜单路由" prop="url">
         <el-input v-model="dataForm.url" placeholder="菜单路由" />
       </el-form-item>
       <el-form-item v-if="dataForm.type !== 0" label="授权标识" prop="perms">
@@ -101,7 +101,7 @@ export default {
       visible: false,
       dataForm: {
         id: 0,
-        type: 1,
+        type: 0,
         typeList: ['目录', '菜单', '按钮'],
         name: '',
         parentId: 0,
@@ -191,6 +191,21 @@ export default {
             'perms': this.dataForm.perms,
             'orderNum': this.dataForm.orderNum,
             'icon': this.dataForm.icon
+          }
+
+          if (this.dataForm.type === 0 || this.dataForm.type === 1){
+              if (this.dataForm.url === ''){
+                this.$message({
+                  message: '路由不能为空，格式如:test',
+                  type: 'warn',
+                  duration: 1500,
+                  onClose: () => {
+                    this.visible = false
+                    this.$emit('refreshDataList')
+                  }
+                })
+                return;
+              }
           }
 
           menuSaveOrUpData(type, data).then((res) => {

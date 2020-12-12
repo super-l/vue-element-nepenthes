@@ -24,16 +24,25 @@
         align="center"
         width="120"
         label="上级菜单"
-      />
+      >
+        <template slot-scope="scope">
+          <span v-if="!scope.row.parentName" size="small">无</span>
+          <span v-else-if="scope.row.parentName" size="small">{{scope.row.parentName}}</span>
+        </template>
+      </el-table-column>
+
       <el-table-column
+        prop="icon"
         header-align="center"
         align="center"
         label="图标"
       >
         <template slot-scope="scope">
-          <icon-svg :name="scope.row.icon || ''" />
+          <el-tag v-if="!scope.row.icon" size="small">无</el-tag>
+          <el-tag v-else-if="scope.row.icon" size="small">{{scope.row.icon}}</el-tag>
         </template>
       </el-table-column>
+
       <el-table-column
         prop="type"
         header-align="center"
@@ -60,6 +69,7 @@
         :show-overflow-tooltip="true"
         label="菜单URL"
       />
+
       <el-table-column
         prop="perms"
         header-align="center"
@@ -67,7 +77,13 @@
         width="150"
         :show-overflow-tooltip="true"
         label="授权标识"
-      />
+      >
+        <template slot-scope="scope">
+          <span v-if="!scope.row.perms" size="small">无</span>
+          <span v-else-if="scope.row.perms" size="small">{{scope.row.perms}}</span>
+        </template>
+      </el-table-column>
+
       <el-table-column
         fixed="right"
         header-align="center"
