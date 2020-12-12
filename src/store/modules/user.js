@@ -1,4 +1,4 @@
-import { login, logout, getInfo } from '@/api/user'
+import { userLogin, userLogout, userInfo } from '@/api/sys/user'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import router, { resetRouter } from '@/router'
 import defaultAvatar from '@/assets/avatar/default.svg'
@@ -38,7 +38,7 @@ const actions = {
   login({ commit }, userInfo) {
     const { username, password, captcha, uuid } = userInfo
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password, captcha: captcha.trim(), uuid: uuid }).then(response => {
+      userLogin({ username: username.trim(), password: password, captcha: captcha.trim(), uuid: uuid }).then(response => {
         const { data } = response
         commit('SET_TOKEN', data.token)
         setToken(data.token)
@@ -52,16 +52,18 @@ const actions = {
   // get user info
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
-      getInfo(state.token).then(response => {
+      userInfo(state.token).then(response => {
         const { data } = response
 
         if (!data) {
           reject('Verification failed, please Login again.')
+          removeToken()
         }
 
         const { status, username, email, mobile } = data
         if (status !== 1) {
           reject('用户状态异常,请联系管理员解锁!')
+          removeToken()
         }
         // commit('SET_ROLES', roles)
         commit('SET_NAME', username)
@@ -70,6 +72,7 @@ const actions = {
         commit('SET_MOBILE', mobile)
         resolve(data)
       }).catch(error => {
+        removeToken()
         reject(error)
       })
     })
@@ -78,7 +81,7 @@ const actions = {
   // user logout
   logout({ commit, state, dispatch }) {
     return new Promise((resolve, reject) => {
-      logout(state.token).then(() => {
+      userLogout(state.token).then(() => {
         commit('SET_TOKEN', '')
         commit('SET_ROLES', [])
         removeToken()

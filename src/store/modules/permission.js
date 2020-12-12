@@ -1,41 +1,8 @@
 import { constantRoutes } from '@/router'
 import Layout from '@/layout'
-import { getMenuNav } from '@/api/menu'
+import { menuNav } from '@/api/sys/menu'
 import { removeToken } from '@/utils/auth' // get token from cookie
-
-/**
- * Use meta.role to determine if the current user has permission
- * @param roles
- * @param route
- */
-function hasPermission(roles, route) {
-  if (route.meta && route.meta.roles) {
-    return roles.some(role => route.meta.roles.includes(role))
-  } else {
-    return true
-  }
-}
-
-/**
- * Filter asynchronous routing tables by recursion
- * @param routes asyncRoutes
- * @param roles
- */
-export function filterAsyncRoutes(routes, roles) {
-  const res = []
-
-  routes.forEach(route => {
-    const tmp = { ...route }
-    if (hasPermission(roles, tmp)) {
-      if (tmp.children) {
-        tmp.children = filterAsyncRoutes(tmp.children, roles)
-      }
-      res.push(tmp)
-    }
-  })
-
-  return res
-}
+import { isURL } from '@/utils/validate'
 
 const state = {
   routes: [],
@@ -58,13 +25,17 @@ const actions = {
    */
   generateRoutes({ commit }) {
     return new Promise(resolve => {
-      getMenuNav().then((res) => {
+      menuNav().then((res) => {
         const asyncRouterMap = res.data.menu
         const accessedRoutes = convertRouter(asyncRouterMap)
         commit('SET_ROUTES', accessedRoutes)
+
+        const permissions = res.data.permissions
+        sessionStorage.setItem('permissions', JSON.stringify(permissions || '[]'))
+
         resolve(accessedRoutes)
       }).catch(function(res) {
-        console.log('遇到错误!res:' + res)
+        console.log('拉取菜单异常!提示:' + res)
         removeToken()
       })
     })
@@ -96,48 +67,59 @@ export function convertRouter(asyncRouterMap = []) {
       }
 
       menuItem.list.forEach(childrenMenuItem => {
-        const sub_view = childrenMenuItem.url.replace(/^\/*/g, '')
+        console.log(childrenMenuItem.url)
+        if (isURL(childrenMenuItem.url)) {
+          children.push(
+            {
+              path: childrenMenuItem.url,
+              redirect: childrenMenuItem.url,
+              meta: { title: childrenMenuItem.name, icon: 'el-icon-s-help', iframeUrl: childrenMenuItem.url }
+            }
+          )
+        } else {
+          const sub_view = childrenMenuItem.url.replace(/^\/*/g, '')
 
-        // console.log(sub_view)
-        // sub_view = 'form/index'
-        // const diycom = () => import(`@/views/${sub_view}`)
-        // const diycom = (resolve) => require(['@/views/' + sub_view], resolve)
-        children.push(
-          {
-            path: '/' + childrenMenuItem.url.replace('/', '-'),
-            name: '/' + childrenMenuItem.url.replace('/', '-'),
-            // component: (resolve) => require(["@/views/form/index"], resolve),
-            // component: r => require.ensure([], () => r(require('@/views/form/index')), 'chunk'),
-            // component: (resolve) => require(["@/views/form/index"], resolve),
-            component: (resolve) => require(['@/views/' + sub_view], resolve),
-            meta: { title: childrenMenuItem.name, icon: 'el-icon-s-help' }
-          }
-        )
+          children.push(
+            {
+              path: '/' + childrenMenuItem.url.replace('/', '-'),
+              name: '/' + childrenMenuItem.url.replace('/', '-'),
+              component: (resolve) => require(['@/views/' + sub_view], resolve),
+              meta: { title: childrenMenuItem.name, icon: 'el-icon-s-help' }
+            }
+          )
+        }
       })
       route.children = children
       accessedRoutes.push(route)
     } else {
-      // 处理url
-      menuItem.url = menuItem.url.replace(/^\//, '')
+      const route = {
+        path: menuItem.url.replace('/', '-'),
+        component: null,
+        name: menuItem.url.replace('/', '-'),
+        meta: {
+          menuId: menuItem.menuId,
+          title: menuItem.name
+        }
+      }
 
-      const sub_view = menuItem.url.replace(/^\/*/g, '')
-      // console.log(sub_view)
-      // sub_view = 'form/index'
+      // url以http[s]://开头, 通过iframe展示
+      if (isURL(menuItem.url)) {
+        console.log('isurl')
+        route.path = `i-${menuItem.menuId}`
+        route.name = `i-${menuItem.menuId}`
+        route.meta.iframeUrl = menuItem.url
+      } else {
+        // 处理url
+        menuItem.url = menuItem.url.replace(/^\//, '')
+        const sub_view = menuItem.url.replace(/^\/*/g, '')
+        route.component = (resolve) => require(['@/views/' + sub_view], resolve)
+      }
 
       // 生成路由
-      accessedRoutes.push(
-        {
-          path: menuItem.url.replace('/', '-'),
-          component: (resolve) => require(['@/views/' + sub_view], resolve),
-          name: menuItem.url.replace('/', '-'),
-          meta: {
-            menuId: menuItem.menuId,
-            title: menuItem.name
-          }
-        }
-      )
+      accessedRoutes.push(route)
     }
   })
+  console.log(accessedRoutes)
   accessedRoutes.push({ path: '*', redirect: '/404', hidden: true })
   return accessedRoutes
 }

@@ -1,13 +1,13 @@
 <template>
-  <div class="mod-user">
+  <div class="mod-config">
     <el-form :inline="true" :model="dataForm" @keyup.enter.native="getDataList()">
       <el-form-item>
-        <el-input v-model="dataForm.userName" placeholder="用户名" clearable />
+        <el-input v-model="dataForm.paramKey" placeholder="参数名" clearable />
       </el-form-item>
       <el-form-item>
         <el-button @click="getDataList()">查询</el-button>
-        <el-button v-if="isAuth('sys:user:save')" type="primary" @click="addOrUpdateHandle()">新增</el-button>
-        <el-button v-if="isAuth('sys:user:delete')" type="danger" :disabled="dataListSelections.length <= 0" @click="deleteHandle()">批量删除</el-button>
+        <el-button type="primary" @click="addOrUpdateHandle()">新增</el-button>
+        <el-button type="danger" :disabled="dataListSelections.length <= 0" @click="deleteHandle()">批量删除</el-button>
       </el-form-item>
     </el-form>
     <el-table
@@ -24,47 +24,29 @@
         width="50"
       />
       <el-table-column
-        prop="userId"
+        prop="id"
         header-align="center"
         align="center"
         width="80"
         label="ID"
       />
       <el-table-column
-        prop="username"
+        prop="paramKey"
         header-align="center"
         align="center"
-        label="用户名"
+        label="参数名"
       />
       <el-table-column
-        prop="email"
+        prop="paramValue"
         header-align="center"
         align="center"
-        label="邮箱"
+        label="参数值"
       />
       <el-table-column
-        prop="mobile"
+        prop="remark"
         header-align="center"
         align="center"
-        label="手机号"
-      />
-      <el-table-column
-        prop="status"
-        header-align="center"
-        align="center"
-        label="状态"
-      >
-        <template slot-scope="scope">
-          <el-tag v-if="scope.row.status === 0" size="small" type="danger">禁用</el-tag>
-          <el-tag v-else size="small">正常</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="createTime"
-        header-align="center"
-        align="center"
-        width="180"
-        label="创建时间"
+        label="备注"
       />
       <el-table-column
         fixed="right"
@@ -74,8 +56,8 @@
         label="操作"
       >
         <template slot-scope="scope">
-          <el-button v-if="isAuth('sys:user:update')" type="text" size="small" @click="addOrUpdateHandle(scope.row.userId)">修改</el-button>
-          <el-button v-if="isAuth('sys:user:delete')" type="text" size="small" @click="deleteHandle(scope.row.userId)">删除</el-button>
+          <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id)">修改</el-button>
+          <el-button type="text" size="small" @click="deleteHandle(scope.row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -94,9 +76,8 @@
 </template>
 
 <script>
-import { userList, userDelete } from '@/api/sys/user'
-import AddOrUpdate from './user-add-or-update'
-
+import { configList, configDelete } from '@/api/sys/config'
+import AddOrUpdate from './config-add-or-update'
 export default {
   components: {
     AddOrUpdate
@@ -104,7 +85,7 @@ export default {
   data() {
     return {
       dataForm: {
-        userName: ''
+        paramKey: ''
       },
       dataList: [],
       pageIndex: 1,
@@ -121,15 +102,16 @@ export default {
   methods: {
     // 获取数据列表
     getDataList() {
-      const that = this
       this.dataListLoading = true
+      const that = this
 
       const params = {
         'page': this.pageIndex,
         'limit': this.pageSize,
-        'username': this.dataForm.userName
+        'paramKey': this.dataForm.paramKey
       }
-      userList(params).then(function(res) {
+
+      configList(params).then(function(res) {
         if (res && res.code === 200) {
           that.dataList = res.data.list
           that.totalPage = res.data.totalCount
@@ -140,7 +122,6 @@ export default {
         that.dataListLoading = false
       })
     },
-
     // 每页数
     sizeChangeHandle(val) {
       this.pageSize = val
@@ -166,15 +147,15 @@ export default {
     // 删除
     deleteHandle(id) {
       const that = this
-      var userIds = id ? [id] : this.dataListSelections.map(item => {
-        return item.userId
+      var ids = id ? [id] : this.dataListSelections.map(item => {
+        return item.id
       })
-      this.$confirm(`确定对[id=${userIds.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
+      this.$confirm(`确定对[id=${ids.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        userDelete(userIds).then(function(res) {
+        configDelete(ids).then(function(res) {
           if (res && res.code === 200) {
             that.$message({
               message: '操作成功',

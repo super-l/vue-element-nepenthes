@@ -20,8 +20,17 @@ import './utils/error-log' // error log
 
 import * as filters from './filters' // global filters
 
-import httpRequest from '@/utils/httpRequest' // api: https://github.com/axios/axios
 import { isAuth } from '@/utils'
+
+// 挂载全局
+Vue.prototype.isAuth = isAuth
+Vue.prototype.$loading = Element.Loading.service
+Vue.prototype.$msgbox = Element.MessageBox
+Vue.prototype.$alert = Element.MessageBox.alert
+Vue.prototype.$confirm = Element.MessageBox.confirm
+Vue.prototype.$prompt = Element.MessageBox.prompt
+Vue.prototype.$notify = Element.Notification
+Vue.prototype.$message = Element.Message
 
 /**
  * If you don't want to use mock-server
@@ -35,10 +44,6 @@ if (process.env.NODE_ENV === 'production') {
   const { mockXHR } = require('../mock')
   mockXHR()
 }
-
-// 挂载全局
-Vue.prototype.$http = httpRequest // ajax请求方法
-Vue.prototype.isAuth = isAuth     // 权限方法
 
 Vue.use(Element, {
   size: Cookies.get('size') || 'medium' // set element-ui default size
